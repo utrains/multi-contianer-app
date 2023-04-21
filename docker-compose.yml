@@ -1,0 +1,45 @@
+version: '3'
+services:
+  
+  nginx:
+    build: ./nginx
+    image: toxicmoel/nginximage:latast
+    ports:
+      - 80:80
+    
+     # - /opt/app/ecommerce/static_root
+    depends_on:
+      - web
+    restart: "on-failure"
+  web:
+    build: . #build the image for the web service from the dockerfile in parent directory
+    command: sh -c "python manage.py makemigrations &&
+                    python manage.py migrate &&
+                    python manage.py collectstatic --noinput &&
+                    gunicorn demo.wsgi:application --bind 0.0.0.0:8081"
+    
+      #- /ecommerce # map data and files from parent directory in host to microservice directory in docker containe
+      #- /opt/app/ecommerce/static_root
+    image: toxicmoel/ecommproject:latest
+
+    expose:
+      - 8081
+    restart: "on-failure"
+    depends_on:
+      - db
+  db:
+    image: postgres:11-alpine
+    
+      #- /var/lib/postgresql/data/
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_PASSWORD=utrainsdb
+      - POSTGRES_DB=website
+      - PGPORT=5432
+      - POSTGRES_USER=webuser
+    restart: "on-failure"
+
+volumes:
+  postgres_data:
+  static_root:
+
